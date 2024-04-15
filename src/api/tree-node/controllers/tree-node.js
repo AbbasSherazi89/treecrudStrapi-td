@@ -1,5 +1,7 @@
 // "use strict";
 
+const treeNode = require("../routes/tree-node");
+
 /**
  * treess controller
  */
@@ -9,7 +11,7 @@ const { createCoreController } = require("@strapi/strapi").factories;
 module.exports = createCoreController(
   "api::tree-node.tree-node",
   ({ strapi }) => ({
-    async getdata(ctx, next) {
+    async getdata(ctx) {
       try {
         const data = await strapi.entityService.findMany(
           "api::tree-node.tree-node",
@@ -100,23 +102,130 @@ module.exports = createCoreController(
       }
     },
 
-    async updateNode(ctx) {
-     
+    async getAvailableNodes(ctx) {
+      const clickedNodeId = ctx.params.id;
+      console.log(clickedNodeId);
       try {
-         // @ts-ignore
-      const { data } = ctx.request.body;
-        console.log("data",data);
-         await strapi.entityService.update(
+        const allNodes = await strapi.entityService.findMany(
+          "api::tree-node.tree-node",
+          {
+            fields: ["name"],
+            populate: {
+              parent: {
+                fields: ["name"],
+              },
+            },
+          }
+        );
+
+        const treeD = createTree(allNodes);
+        // console.log("Tree:", treeD);
+
+        const isDescendant = (currNode, parentId) => {
+          // console.log("Checking node:", currNode);
+          if (currNode.id == parentId) {
+            // console.log("Node is the clicked node:", currNode.id);
+            return true;
+          } else if (currNode.children && currNode.children.length > 0) {
+            for (const child of currNode.children) {
+              if (isDescendant(child, parentId)) {
+                return true;
+              }
+            }
+          }
+
+          console.log("Node is not a descendant of clicked node.");
+          return false;
+        };
+
+        const collectNodes = (treeData, clickedNodeId) => {
+          const filteredNodes = [];
+
+          filteredNodes.push({ id: -1, name: "None" });
+
+          // If the clicked node is "None", return the clicked node itself
+          if (clickedNodeId == -1) {
+            const clickedNode = treeData.find((node) => node.id == -1);
+            if (clickedNode) {
+              return [clickedNode];
+            }
+            return [];
+          }
+          const collect = (node) => {
+            const newNode = { ...node };
+            if (
+              node.id != clickedNodeId &&
+              !isDescendant(node, clickedNodeId)
+            ) {
+              filteredNodes.push(newNode);
+            }
+            if (node.children && node.children.length > 0) {
+              const filteredChildren = [];
+              for (const child of node.children) {
+                if (
+                  child.id != clickedNodeId &&
+                  !isDescendant(child, clickedNodeId)
+                ) {
+                  const filteredChild = collect(child);
+                  if (filteredChild) {
+                    filteredChildren.push(filteredChild);
+                  }
+                }
+              }
+              newNode.children = filteredChildren;
+            }
+            return newNode.children.length > 0 ? newNode : null;
+          };
+
+          for (const node of treeData) {
+            if (node.id == clickedNodeId) {
+              // If the clicked node is found, collect its siblings
+              const parentNode = node.parent;
+              if (parentNode && parentNode.children) {
+                for (const sibling of parentNode.children) {
+                  if (sibling.id != clickedNodeId) {
+                    const filteredSibling = { ...sibling, children: [] };
+                    filteredNodes.push(filteredSibling);
+                  }
+                }
+              }
+            } else {
+              // Collect nodes recursively excluding the clicked node and its descendants
+              collect(node);
+            }
+          }
+
+          return filteredNodes;
+        };
+
+        // Usage:
+        const filteredNodes = collectNodes(treeD, clickedNodeId);
+        console.log("Filtered Nodes:", filteredNodes);
+
+        console.log("Filtered Nodes:", filteredNodes);
+        ctx.send(filteredNodes);
+      } catch (error) {
+        ctx.throw(500, "Error fetching available nodes");
+      }
+    },
+
+    async updateNode(ctx) {
+      try {
+        // @ts-ignore
+        const { data } = ctx.request.body;
+        console.log("data", data);
+        await strapi.entityService.update(
           "api::tree-node.tree-node",
           data.nodeId,
           {
-            data:{
-              parent: data.newParentNodeId
-          }}
-         )
-        ctx.send({ message: 'Node moved successfully' });
+            data: {
+              parent: data.newParentNodeId,
+            },
+          }
+        );
+        ctx.send({ message: "Node moved successfully" });
       } catch (error) {
-        ctx.throw(500, 'Error moving node');
+        ctx.throw(500, "Error moving node");
       }
     },
   })
@@ -125,7 +234,6 @@ module.exports = createCoreController(
 function createTree(data) {
   const map = new Map();
   const roots = [];
-
   data.forEach((nodeData) => {
     const { id, name, parent } = nodeData;
     const node = { id, name, children: [] };

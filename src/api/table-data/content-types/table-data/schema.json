@@ -1,0 +1,24 @@
+{
+  "kind": "collectionType",
+  "collectionName": "table_datas",
+  "info": {
+    "singularName": "table-data",
+    "pluralName": "table-datas",
+    "displayName": "Table-Data"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "FirstName": {
+      "type": "string"
+    },
+    "LastName": {
+      "type": "string"
+    },
+    "Email": {
+      "type": "email"
+    }
+  }
+}

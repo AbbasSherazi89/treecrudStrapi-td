@@ -362,6 +362,37 @@ export interface AdminTransferTokenPermission extends Schema.CollectionType {
   };
 }
 
+export interface ApiTableDataTableData extends Schema.CollectionType {
+  collectionName: 'table_datas';
+  info: {
+    singularName: 'table-data';
+    pluralName: 'table-datas';
+    displayName: 'Table-Data';
+  };
+  options: {
+    draftAndPublish: false;
+  };
+  attributes: {
+    FirstName: Attribute.String;
+    LastName: Attribute.String;
+    Email: Attribute.Email;
+    createdAt: Attribute.DateTime;
+    updatedAt: Attribute.DateTime;
+    createdBy: Attribute.Relation<
+      'api::table-data.table-data',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+    updatedBy: Attribute.Relation<
+      'api::table-data.table-data',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+  };
+}
+
 export interface ApiTreeNodeTreeNode extends Schema.CollectionType {
   collectionName: 'tree_nodes';
   info: {
@@ -834,6 +865,7 @@ declare module '@strapi/types' {
       'admin::api-token-permission': AdminApiTokenPermission;
       'admin::transfer-token': AdminTransferToken;
       'admin::transfer-token-permission': AdminTransferTokenPermission;
+      'api::table-data.table-data': ApiTableDataTableData;
       'api::tree-node.tree-node': ApiTreeNodeTreeNode;
       'plugin::upload.file': PluginUploadFile;
       'plugin::upload.folder': PluginUploadFolder;

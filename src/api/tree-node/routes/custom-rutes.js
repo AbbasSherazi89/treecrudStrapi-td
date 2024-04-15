@@ -16,6 +16,11 @@ module.exports = {
       handler: "tree-node.deleteNode",
     },
     {
+      method: "GET",
+      path: "/tree-nodes/getAvailableNodes/:id",
+      handler: "tree-node.getAvailableNodes",
+    },
+    {
       method: "PUT",
       path: "/tree-nodes/updateNode",
       handler: "tree-node.updateNode", 
